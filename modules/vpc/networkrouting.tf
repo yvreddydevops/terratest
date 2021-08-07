@@ -1,13 +1,4 @@
 ######## IGW ###############
-resource "aws_internet_gateway" "main-igw" {
-  vpc_id = aws_vpc.msk_vpc.id
-
-  tags = {
-    Name = "IGW"
-  }
-}
-
-
 
 ############# Route Tables public ##########
 
@@ -24,7 +15,7 @@ resource "aws_route_table" "PublicRouteTable" {
 
 }
 
-/*
+
 ########### NAT ##############
 resource "aws_eip" "nat" {
   count = length(aws_subnet.private_subnet)
@@ -53,7 +44,7 @@ resource "aws_route_table" "PrivateRouteTable" {
       Name =  format("%s--%s","PRI RT", count.index )
 }
 }
-*/
+
 #########Route Table Association #############
 
 resource "aws_route_table_association" "route_Publicsubnet" {
@@ -62,12 +53,12 @@ resource "aws_route_table_association" "route_Publicsubnet" {
   route_table_id = aws_route_table.PublicRouteTable.id
 }
 
-/*
+
 resource "aws_route_table_association" "route_Privatesubnet" {
   count          = length(var.private_subnet_cidrs)
   subnet_id      = element(aws_subnet.private_subnet.*.id, count.index)
   route_table_id = aws_route_table.PrivateRouteTable[count.index].id
 }
-*/
+
 
 
