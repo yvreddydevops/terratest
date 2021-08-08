@@ -1,5 +1,5 @@
 
-output "public_subnet1" {
+output "public_subnet_ids" {
   value = aws_subnet.public_subnet.*.id
 }
 output "pravite_subnet_id" {

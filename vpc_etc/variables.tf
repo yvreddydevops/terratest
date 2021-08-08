@@ -14,7 +14,7 @@ variable "public_subnet_cidrs" {}
 variable "private_subnet_cidrs" {}
 
 variable "ami_id" {
-  default = "ami-06178cf087598769c"
+default = "ami-0ad8ecac8af5fc52b"
 }
 
 

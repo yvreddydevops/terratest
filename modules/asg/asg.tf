@@ -1,46 +1,39 @@
-resource "aws_launch_configuration" "example-launchconfig" {
 
-  count = var.launch_config ? 1 : 0
-  name_prefix     = "example-launchconfig"
-  image_id        = var.ami_id
-  instance_type   = "t2.micro"
-  key_name        = var.key_name
-  security_groups = [var.security_groups]
 
+terraform {
+  required_version = ">= 0.13"
+}
+
+resource "aws_security_group" "asg_security_group" {
+  vpc_id      = var.vpc_id
+  name        = "asg_security_group"
+  description = "security group that allows ssh and all egress traffic"
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
-
-resource "aws_autoscaling_group" "example-autoscaling" {
-
-  count = var.launch_config ? 1 : 0
-  name                      = "example-autoscaling"
-  vpc_zone_identifier       = toset(var.autoscaling_subnets)
-  launch_configuration      = aws_launch_configuration.example-launchconfig[0].name
-  min_size                  = var.min_size
-  max_size                  = var.max_size
-  desired_capacity          = 2
-  health_check_grace_period = 300
-  health_check_type         = var.health_check_type // "EC2"
-  force_delete              = true
-
-  tag {
-    key                 = "Name"
-    value               = var.autoscale_name
-    propagate_at_launch = true
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.asg_cidr]
+  }
+  tags = {
+    Name = "asg-security-group"
   }
 }
 
-
-
-#data "aws_availability_zones" "available" {}
-
 resource "aws_launch_template" "mylaunch_template" {
-  count = var.launch_config ? 0 : 1
   name_prefix = "Launch_Template"
+
   image_id = var.ami_id
   instance_type = var.instance_type // "t2.micro"
-  key_name = "learnlinux"
-  vpc_security_group_ids = [var.security_groups]
+  key_name = var.PATH_TO_PRIVATE_KEY
+  vpc_security_group_ids = [aws_security_group.asg_security_group.id]
+  user_data = var.user_data
   tags = {
     Name = "Launch Template"
   }
@@ -49,8 +42,7 @@ resource "aws_launch_template" "mylaunch_template" {
   }
 }
 resource "aws_autoscaling_group" "asg_launch_tmpl" {
-  count = var.launch_config ?  0 : 1
-  name_prefix = aws_launch_template.mylaunch_template[0].name
+  name_prefix = aws_launch_template.mylaunch_template.name
   vpc_zone_identifier       = toset(var.autoscaling_subnets)
   min_size                  = var.min_size
   max_size                  = var.max_size
@@ -69,5 +61,27 @@ resource "aws_autoscaling_group" "asg_launch_tmpl" {
     value               = var.autoscale_name
     propagate_at_launch = true
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
+
+resource "aws_autoscaling_attachment" "asg_attachemnt" {
+
+  count = var.health_check_type == "ELB" ? 1 : 0
+  autoscaling_group_name = aws_autoscaling_group.asg_launch_tmpl.id
+  alb_target_group_arn = var.alb_target_grp_arn
+
+}
+
+
+
+
+
+
+
+
+
+
 
